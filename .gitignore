@@ -1,0 +1,9 @@
+uv.lock
+data
+.vscode
+.venv
+.python-version
+pyproject.toml
+src/flowdpo.egg-info
+flow_dpo_training_logs
+wandb
