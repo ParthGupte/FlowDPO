@@ -53,7 +53,7 @@ class FlowDPOModule(FlowModelBase):
         t3 = batch['t3']
         t4 = batch['t4']
         t5 = batch['t5']
-        eps = batch['eps']
+        
 
         # ---- y_t outputs (winner branch) ----
         y_t1_w = y_t_til(y0_w, y_w, t1)
@@ -65,6 +65,9 @@ class FlowDPOModule(FlowModelBase):
         y_t4_l = y_t_til(y0_l, y_l, t4)
         y_t5_l = y_t_til(y0_l, y_l, t5)
 
+        y_t5_l = y_t5_l.detach().requires_grad_(True)
+        y_t5_w = y_t5_w.detach().requires_grad_(True)
+
         # ---- delta evaluations ----
         delta_t1_w = delta_t_til(y_t1_w, t1, x)
         delta_t2_w = delta_t_til(y_t2_w, t2, x)
@@ -74,18 +77,30 @@ class FlowDPOModule(FlowModelBase):
         delta_t4_l = delta_t_til(y_t4_l, t4, x)
         delta_t5_l = delta_t_til(y_t5_l, t5, x)
 
-        loss = self.loss_fn(delta_t1_w,delta_t2_w,delta_t3_l,delta_t4_l,delta_t5_l,delta_t5_w,y_w,y_l,eps,y_t5_l,y_t5_w)
+        loss = self.loss_fn(delta_t1_w,delta_t2_w,delta_t3_l,delta_t4_l,delta_t5_l,delta_t5_w,y_w,y_l,y_t5_l,y_t5_w)
 
-        return loss
-
+        self.train_losses.append(loss.detach().cpu())
         
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        X_1 = batch['y_pos']
+        class_labels = batch['x']
+        X_0 = torch.randn_like(X_1)
+        return super().validation_step((X_1,class_labels,X_0,None), batch_idx)
+    
+    def test_step(self, batch, batch_idx):
+        X_1 = batch['y_pos']
+        class_labels = batch['x']
+        X_0 = torch.randn_like(X_1)
+        return super().test_step((X_1,class_labels,X_0,None), batch_idx)
 
 
     def encode_image(self,X_1):
         return X_1
     
     def decode_image(self,Z_1):
-        return Z_1
+        return (Z_1+1)/2
     
     def update_metrics(self, real_imgs, gen_imgs, fid_only=True):
         imgs_shape = real_imgs.shape

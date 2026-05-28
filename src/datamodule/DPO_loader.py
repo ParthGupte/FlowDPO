@@ -3,6 +3,26 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms
 import lightning as L
 from torch.utils.data import random_split
+import math
+
+def standard_normal_logprob(x, dim=None):
+    """
+    Computes log p(x) under standard normal N(0, I)
+
+    Args:
+        x: tensor of any shape
+        dim: dimensions to sum over (default: all except batch)
+
+    Returns:
+        log_prob: tensor of shape (batch,) if dim is specified
+    """
+    if dim is None:
+        dim = tuple(range(1, x.ndim))  # sum over all non-batch dims
+    
+    log_z = -0.5 * math.log(2 * math.pi)
+    
+    return (log_z - 0.5 * x**2).sum(dim=dim)
+
 
 
 class CachedDPOMNISTDataset(Dataset):
@@ -42,12 +62,11 @@ class FlowDPODataset(Dataset):
     
     def __getitem__(self, idx):
         row_dict = self.dataset[idx]
-        row_dict['eps'] = torch.randn_like(row_dict['y_neg'])
         row_dict['t1'] = torch.rand(())
-        row_dict['t2'] = torch.rand(())
-        row_dict['t3'] = torch.rand(())
-        row_dict['t4'] = torch.rand(())
-        row_dict['t5'] = torch.rand(())
+        row_dict['t2'] = row_dict['t1'] #torch.rand(())
+        row_dict['t3'] = row_dict['t1'] #torch.rand(())
+        row_dict['t4'] = row_dict['t1'] #torch.rand(())
+        row_dict['t5'] = row_dict['t1'] #torch.rand(())
         return row_dict
 
 # -----------------------------
@@ -107,4 +126,14 @@ class FlowDPODataModule(L.LightningDataModule):
 
 if __name__ == "__main__":
     dataset = CachedDPOMNISTDataset("data/mnist_9_flow_pairs.pt")
-    print(dataset[0])
+    for i in range(10):
+        item = dataset[i]
+        print(
+            i,
+            item["y_neg"].shape,
+            item["y_pos"].shape,
+            item["y0_neg"].shape,
+            item["y0_pos"].shape,
+            standard_normal_logprob(item["y0_neg"]),
+            standard_normal_logprob(item["y0_pos"])
+        )

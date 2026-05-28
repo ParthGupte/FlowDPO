@@ -2,9 +2,9 @@ from datamodule.MNIST_loader import FlowMNISTDataModule
 import lightning as L
 import torch
 from diffusers import UNet2DModel
-from experiments.configs import training_config_1 as training_config
+from experiments.configs import training_config_2 as training_config
 from lightning.pytorch.loggers import WandbLogger
-from models.unet_flow import FlowModel
+from models.unet_flow_cw import FlowModel
 from lightning.pytorch.callbacks import ModelCheckpoint
 import sys
 from seed_all import set_seed

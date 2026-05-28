@@ -92,7 +92,7 @@ class FlowModelBase(L.LightningModule):
     @torch.no_grad()
     def validation_step(self,batch, batch_idx):
         X_1, class_labels, X_0, t = batch
-        real_imgs = torch.clamp(X_1,0,1)
+        real_imgs = torch.clamp((X_1+1)/2,0,1)
         gen_images = self.generate_image(X_0,class_labels,self.solver_steps)
         self.update_metrics(real_imgs,gen_images)
         self.log_images(real_imgs,batch_idx,"real_imgs",self.save_n_images)
@@ -168,7 +168,7 @@ class FlowModelBase(L.LightningModule):
             return X_0
         
     @torch.no_grad()
-    def update_metrics(self,real_imgs,gen_imgs,fid_only = False):
+    def update_metrics(self,real_imgs,gen_imgs,fid_only = True):
         if fid_only:
             metric = self.metrics_dict["FID"]
             metric.update(real_imgs,real = True)
@@ -182,7 +182,7 @@ class FlowModelBase(L.LightningModule):
                     metric.update(real_imgs,gen_imgs)
         
     @torch.no_grad()
-    def compute_metrics(self,fid_only = False):
+    def compute_metrics(self,fid_only = True):
         metrics_values_dict = {}
         if fid_only:
             metric = self.metrics_dict["FID"]

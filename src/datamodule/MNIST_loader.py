@@ -3,13 +3,14 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms
 import lightning as L
 
-
+flip = transforms.RandomHorizontalFlip(p=0.5)
 # -----------------------------
 # MNIST Base Dataset
 # -----------------------------
 def get_mnist_dataset(train=True):
     transform = transforms.Compose([
-        transforms.ToTensor(),
+        transforms.ToTensor(),                    # [0,1]
+        transforms.Normalize((0.5,), (0.5,))      # -> [-1,1]
     ])
     
     dataset = datasets.MNIST(
@@ -26,14 +27,18 @@ def get_mnist_dataset(train=True):
 # Flow Wrapper Dataset
 # -----------------------------
 class FlowMNISTDataset(Dataset):
-    def __init__(self, base_dataset):
+    def __init__(self, base_dataset, flipping = False):
         self.dataset = base_dataset
+        self.flipping = flipping
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
         x1, label = self.dataset[idx]
+        if self.flipping:
+            x1 = flip(x1)
+
 
         x0 = torch.randn_like(x1)      # Gaussian noise
         t = torch.rand(())              # scalar time
@@ -45,11 +50,12 @@ class FlowMNISTDataset(Dataset):
 # Lightning DataModule
 # -----------------------------
 class FlowMNISTDataModule(L.LightningDataModule):
-    def __init__(self, batch_size=64, num_workers=2, data_dir="./data"):
+    def __init__(self, batch_size=64, num_workers=2, data_dir="./data",flipping = False):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.data_dir = data_dir
+        self.flipping = flipping
 
     def setup(self, stage=None):
         # Called on every GPU separately in DDP
@@ -57,12 +63,12 @@ class FlowMNISTDataModule(L.LightningDataModule):
             train_base = get_mnist_dataset(train=True)
             val_base = get_mnist_dataset(train=False)
 
-            self.train_dataset = FlowMNISTDataset(train_base)
-            self.val_dataset = FlowMNISTDataset(val_base)
+            self.train_dataset = FlowMNISTDataset(train_base,flipping=self.flipping)
+            self.val_dataset = FlowMNISTDataset(val_base,flipping=self.flipping)
 
         if stage == "test" or stage is None:
             test_base = get_mnist_dataset(train=False)
-            self.test_dataset = FlowMNISTDataset(test_base)
+            self.test_dataset = FlowMNISTDataset(test_base,flipping=self.flipping)
 
     def train_dataloader(self):
         return DataLoader(
