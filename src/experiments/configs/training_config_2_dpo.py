@@ -1,23 +1,20 @@
 import torch
 from ODESolvers.euler_solver import EulerSolver
 from ODESolvers.rangakutta4_solver import RK4Solver
-from Losses.dpo_flow import FlowDPOLoss, FlowDPOLossMultiSample, FlowDPOLossMultiSampleRademacher, FlowDPOLossMultiSampleOrtho
+from Losses.dpo_flow import FlowDPOLoss, FlowDPOLossMultiSample, FlowDPOLossWallace
 
 DATA_PATH = "data/mnist_9_flow_pairs.pt"
 BATCH_SIZE = 128
 NUM_WORKERS = 2
 CHECK_VAL_EVERY_N_EPOCHS = 1
-RECOMPUTE_NOISE_INTERVAL_EPOCHS = 10
-PRECOMPUTE_NOISE = False
 DEVICES = [1]
 MAX_EPOCHS = 100
-LOSS_KWARGS = {"beta": 0.1, "N": 1000}
 ACCUMULATE_GRAD_BATCHES = 1
 IMAGE_SIZE = 28
 LATENT_SIZE = (1,28,28)
 OPTIMIZER_CLASS = torch.optim.Adam
 LR = 1e-5
-LOSS_FN_CLASS = FlowDPOLossMultiSample
+LOSS_FN_CLASS = FlowDPOLossWallace
 SOLVER_CLASS_FWD = RK4Solver
 SOLVER_STEPS = 10
 SAVE_N_IMAGES = 10

@@ -63,10 +63,10 @@ class FlowDPODataset(Dataset):
     def __getitem__(self, idx):
         row_dict = self.dataset[idx]
         row_dict['t1'] = torch.rand(())
-        row_dict['t2'] = row_dict['t1'] #torch.rand(())
-        row_dict['t3'] = row_dict['t1'] #torch.rand(())
-        row_dict['t4'] = row_dict['t1'] #torch.rand(())
-        row_dict['t5'] = row_dict['t1'] #torch.rand(())
+        row_dict['t2'] = torch.rand(())
+        row_dict['t3'] = torch.rand(())
+        row_dict['t4'] = torch.rand(())
+        row_dict['t5'] = torch.rand(())
         return row_dict
 
 # -----------------------------
@@ -85,7 +85,7 @@ class FlowDPODataModule(L.LightningDataModule):
         cached_dataset = CachedDPOMNISTDataset(self.data_path)
         train_dataset, test_dataset = random_split(cached_dataset,[0.8,0.2],torch.Generator().manual_seed(42))
         
-        if stage == "fit" or stage is None:
+        if stage == "fit" or stage == "validate" or stage is None:
             
             train_base = train_dataset
             val_base = test_dataset

@@ -1,8 +1,11 @@
 from models.utils.flow_model import *
+from metrics.flip_detector.metric import FlipRatioMetric
 
 class FlowDPOModule(FlowModelBase):
     def __init__(self, unet, unet_ref, model_config, training_config):
         super().__init__(model_config, training_config)
+        
+        self.flipped_metric = FlipRatioMetric().eval()
 
         self.unet = unet
         self.unet_ref = unet_ref
@@ -89,11 +92,19 @@ class FlowDPOModule(FlowModelBase):
         X_0 = torch.randn_like(X_1)
         return super().validation_step((X_1,class_labels,X_0,None), batch_idx)
     
+    def on_validation_epoch_start(self):
+        self.flipped_metric.reset()
+        return super().on_validation_epoch_start()
+    
     def test_step(self, batch, batch_idx):
         X_1 = batch['y_pos']
         class_labels = batch['x']
         X_0 = torch.randn_like(X_1)
         return super().test_step((X_1,class_labels,X_0,None), batch_idx)
+    
+    def on_test_epoch_start(self):
+        self.flipped_metric.reset()
+        return super().on_test_epoch_start()
 
 
     def encode_image(self,X_1):
@@ -104,6 +115,69 @@ class FlowDPOModule(FlowModelBase):
     
     def update_metrics(self, real_imgs, gen_imgs, fid_only=True):
         imgs_shape = real_imgs.shape
+        self.flipped_metric.update(gen_imgs)
         real_imgs = real_imgs.expand(imgs_shape[0],3,imgs_shape[2],imgs_shape[3])
         gen_imgs = gen_imgs.expand(imgs_shape[0],3,imgs_shape[2],imgs_shape[3])
         return super().update_metrics(real_imgs, gen_imgs, fid_only)
+    
+    @torch.no_grad()
+    def compute_metrics(self,fid_only = True):
+        metric_values = super().compute_metrics(fid_only)
+        results = self.flipped_metric.compute()
+        metric_values["flip_ratio"] = results["flip_ratio"]
+        return metric_values
+    
+    def configure_optimizers(self):
+        optimizer = self.optimizer_class(
+            self.parameters(),
+            lr=self.learning_rate
+        )
+
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     optimizer,
+        #     T_max=100,
+        #     eta_min=1e-7
+        # )
+
+        return {
+            "optimizer": optimizer,
+            # "lr_scheduler": {
+            #     "scheduler": scheduler,
+            #     "interval": "epoch",   # step scheduler every epoch
+            #     "frequency": 1
+            # }
+        }
+
+class FLowDPOModuleWallace(FlowDPOModule):
+    def training_step(self, batch, batch_idx):
+        y_t_til = lambda y_0, y_1, t: (1 - t[:, None, None, None]) * y_0 + t[:, None, None, None] * y_1
+        V_ideal = lambda y_0, y_1: (y_1 - y_0)
+
+        y_w = batch['y_pos']
+        y0_w = torch.randn_like(y_w)
+        y_l = batch['y_neg']
+        y0_l = torch.randn_like(y_l)
+        x = batch['x']
+        t1 = batch['t1']
+        t2 = batch['t2']
+        t3 = batch['t3']
+        t4 = batch['t4']
+        t5 = batch['t5']
+
+        V_w = V_ideal(y0_w, y_w)
+        V_l = V_ideal(y0_l, y_l)
+
+        # ---- y_t outputs (winner branch) ----
+        y_t_w = y_t_til(y0_w, y_w, t1)
+        y_t_l = y_t_til(y0_l, y_l, t1)
+
+        V_theta = self(y_t_w,t1,x)
+        V_ref = self.ref_forward(y_t_l,t1,x)
+
+        loss = self.loss_fn(V_theta,V_ref,V_w,V_l)
+
+        self.train_losses.append(loss.detach().cpu())
+        
+        return loss
+
+

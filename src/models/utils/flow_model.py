@@ -32,7 +32,12 @@ class FlowModelBase(L.LightningModule):
         self.set_hyperparameters(model_config,training_config)
     
     def set_hyperparameters(self,model_config,training_config):
-        self.loss_fn = training_config.LOSS_FN_CLASS()
+        try:
+            self.loss_kargs = training_config.LOSS_KWARGS
+        except AttributeError:
+            self.loss_kargs = {}
+            print("Loss Kargs not defined")
+        self.loss_fn = training_config.LOSS_FN_CLASS(**self.loss_kargs)
         self.learning_rate = training_config.LR
         self.image_size = training_config.IMAGE_SIZE
         self.solver_class_fwd = training_config.SOLVER_CLASS_FWD

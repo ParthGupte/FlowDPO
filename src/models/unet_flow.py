@@ -6,6 +6,7 @@ class FlowModel(FlowModelBase):
         self.unet = unet
         self.set_hyperparameters(model_config,training_config)
     
+    
     def forward(self, X_t,t,class_labels):
         # print("z_t:", X_t.shape)
         # print("t:", t.shape)

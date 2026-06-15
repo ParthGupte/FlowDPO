@@ -7,3 +7,4 @@ pyproject.toml
 src/flowdpo.egg-info
 flow_dpo_training_logs
 wandb
+src/metrics/flip_detector/saved_checkpoint/tiny_mnist_flip_classifier.pt

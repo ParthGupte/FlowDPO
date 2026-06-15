@@ -2,9 +2,9 @@ from datamodule.DPO_loader import FlowDPODataModule
 import lightning as L
 import torch
 from diffusers import UNet2DModel
-from experiments.configs import training_config_1 as training_config_ref, training_config_1_dpo as training_config_dpo
+from experiments.configs import training_config_1 as training_config_ref, training_config_2_dpo as training_config_dpo
 from lightning.pytorch.loggers import WandbLogger
-from models.flow_dpo_module import FlowDPOModule
+from models.flow_dpo_module import FLowDPOModuleWallace as FlowDPOModule
 from models.unet_flow import FlowModel
 from lightning.pytorch.callbacks import ModelCheckpoint
 import sys
@@ -12,7 +12,6 @@ from seed_all import set_seed
 from experiments.configs import model_config_1 as model_config_ref, model_config_1 as model_config_dpo
 import copy
 from lightning.pytorch.profilers import AdvancedProfiler
-from experiments.callbacks.precompute_noise_callback import PrecomputeNoiseCallback
 
 
 seed_value = 42
@@ -58,25 +57,13 @@ checkpoint_callback_FID = ModelCheckpoint(
 
 # profiler = AdvancedProfiler(dirpath="./src/profiles", filename="profiler.txt")
 
-callbacks = [checkpoint_callback_avg_loss, checkpoint_callback_FID]
-
-if getattr(training_config_dpo, 'PRECOMPUTE_NOISE', False):
-    precompute_callback = PrecomputeNoiseCallback(
-        data_module,
-        model_config_ref,
-        training_config_ref,
-        interval_epochs=training_config_dpo.RECOMPUTE_NOISE_INTERVAL_EPOCHS,
-        output_dir="data",
-    )
-    callbacks.append(precompute_callback)
-
 trainer = L.Trainer(
     devices=training_config_dpo.DEVICES,
     max_epochs=training_config_dpo.MAX_EPOCHS,
     accumulate_grad_batches=training_config_dpo.ACCUMULATE_GRAD_BATCHES,
     logger=wandb_logger,
     check_val_every_n_epoch=training_config_dpo.CHECK_VAL_EVERY_N_EPOCHS,
-    callbacks=callbacks,
+    callbacks=[checkpoint_callback_avg_loss,checkpoint_callback_FID],
     # profiler=profiler,
     fast_dev_run=False
 )
@@ -123,3 +110,4 @@ if len(sys.argv) > 1:
         trainer.fit(flowmodel_dpo,datamodule=data_module,ckpt_path="flow_dpo_training_logs/ip7m8d1g/checkpoints/FlowModel_dpo-epoch=83-train_epoch_avg_loss=0.0000.ckpt")
 else:
     trainer.fit(flowmodel_dpo,datamodule=data_module)
+
