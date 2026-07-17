@@ -48,7 +48,7 @@ class FlowDPOLossMultiSample(nn.Module):
         term_1 = (delta_t1_w*(2*y_w-delta_t2_w)).view(B,-1).mean(dim=1)
         term_2 = (-delta_t3_l*(2*y_l-delta_t4_l)).view(B,-1).mean(dim=1)
 
-        eps = torch.randn((B,self.N,C*H*W),device=y_w.device)
+        eps = torch.randn((B,self.N,C*H*W),device=y_w.device,dtype=y_w.dtype)
 
         s_l = torch.matmul(eps,delta_t5_l.view(B,-1).unsqueeze(-1)).squeeze(-1).sum(dim=1)
         s_w = torch.matmul(eps,delta_t5_w.view(B,-1).unsqueeze(-1)).squeeze(-1).sum(dim=1)
@@ -70,7 +70,7 @@ class FlowDPOLossMultiSample(nn.Module):
         term_3 = torch.matmul(eps,(grad_l - grad_w).view(B,-1).unsqueeze(-1)).squeeze(-1).mean(dim=1)
 
         return -F.logsigmoid((self.beta/2)*(term_1 + term_2 + 2*term_3)).mean()
-    
+
 class FlowDPOLossMultiSampleRademacher(nn.Module):
     def __init__(self, beta=0.1,N=1000):
         super().__init__()

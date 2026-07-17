@@ -121,30 +121,30 @@ class HPDv3Dataset(Dataset):
 # if __name__ == "__main__":
 
     
-    # dataset = HPDv3Dataset(
-    #     ROOT,
-    #     split="train",
-    #     image_size=1024,
-    # )
-    # print("Total comparisons:",len(dataset))
+#     dataset = HPDv3Dataset(
+#         ROOT,
+#         split="train",
+#         image_size=1024,
+#     )
+#     print("Total comparisons:",len(dataset))
 
-    # hpdv3_loader = DataLoader(
-    #     dataset,
-    #     batch_size=4,
-    #     shuffle=True,
-    #     num_workers=4,
-    #     pin_memory=True,
-    # )
+#     hpdv3_loader = DataLoader(
+#         dataset,
+#         batch_size=4,
+#         shuffle=True,
+#         num_workers=4,
+#         pin_memory=True,
+#     )
 
-    # batch = next(iter(loader))
+#     batch = next(iter(hpdv3_loader))
 
-    # print(batch["winner"].shape)
-    # print(batch["loser"].shape)
+#     print(batch["winner"].shape)
+#     print(batch["loser"].shape)
 
-    # print(batch["prompt"][0])
+#     print(batch["prompt"][0])
 
-    # print(batch["winner_votes"])
-    # print(batch["loser_votes"])
+#     print(batch["winner_votes"])
+#     print(batch["loser_votes"])
 
-    # print(batch["winner_model"])
-    # print(batch["loser_model"])
+#     print(batch["winner_model"])
+#     print(batch["loser_model"])
